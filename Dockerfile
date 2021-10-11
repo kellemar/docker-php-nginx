@@ -1,3 +1,12 @@
+FROM composer AS composer
+# copying the source directory and install the dependencies with composer
+COPY . /app
+# run composer install to install the dependencies
+RUN composer install \
+  --optimize-autoloader \
+  --no-interaction \
+  --no-progress
+
 FROM alpine:3.14
 LABEL Maintainer="Tim de Pater <code@trafex.nl>"
 LABEL Description="Lightweight container with Nginx 1.20 & PHP 8.0 based on Alpine Linux."
@@ -23,6 +32,9 @@ RUN apk --no-cache add \
   php8-xml \
   php8-xmlreader \
   php8-zlib \
+  php8-pecl-redis \
+  php8-pdo_mysql \
+  php8-common \
   supervisor
 
 # Create symlink so programs depending on `php` still function
@@ -52,7 +64,9 @@ USER nobody
 
 # Add application
 WORKDIR /var/www/html
-COPY --chown=nobody src/ /var/www/html/
+#COPY --chown=nobody . /var/www/html/
+COPY --chown=nginx --from=composer /app /var/www/html
+
 
 # Expose the port nginx is reachable on
 EXPOSE 8080
